@@ -1,6 +1,9 @@
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
+
+import static java.util.Objects.nonNull;
 
 public class LogicRing extends Thread {
 
@@ -32,17 +35,21 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(CREATE_PROCESS_TIMER);
+                    addProcess(new Process(createProcessId()));
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                int newID;
-                do {
-                    newID = Math.round(Math.round(Math.random() * 999));
-                } while (isInvalidId(newID));
-                addProcess(new Process(newID));
-                System.out.println(this.getProcesses().size());
             }
         }).start();
+    }
+
+    private int createProcessId() {
+        Random generator = new Random();
+        int newID;
+        do {
+            newID = generator.nextInt(1000);
+        } while (isInvalidId(newID));
+        return newID;
     }
 
     private boolean isInvalidId(int id) {
@@ -54,20 +61,24 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(CREATE_REQUISITION_TIMER);
+                    if (!hasProcesses() || getProcesses().stream().anyMatch(Process::isCoordenator)) {
+                        System.out.println("Requisicao Cancelada! Coordenador ainda operante ou sem processos!");
+                    } else {
+                        Requisition requisition = getProcesses().stream().findFirst().orElse(new Process(0)).createRequisition();
+                        getProcesses().forEach(p -> p.receiveRequisition(requisition));
+                        getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findFirst().ifPresent(Process::setCoordenator);
+                        System.out.println("Requisicao enviada!");
+                    }
+                    printProcesses();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-
-                if (getProcesses().stream().anyMatch(Process::isCoordenator)) {
-                    System.out.println("Coordenador ainda operante!");
-                    break;
-                }
-                Requisition requisition = getProcesses().stream().findFirst().orElse(new Process(0)).createRequisition();
-                getProcesses().forEach(p -> p.receiveRequisition(requisition));
-                getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findFirst().ifPresent(Process::setCoordenator);
-                System.out.println("Requisicao enviada!");
             }
         }).start();
+    }
+
+    private boolean hasProcesses() {
+        return nonNull(getProcesses()) && !getProcesses().isEmpty();
     }
 
     private void inativateCoordenator() {
@@ -75,12 +86,12 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_COORDENATOR_TIMER);
+                    getProcesses().stream().filter(Process::isCoordenator).findFirst().ifPresent(Process::desactivate);
+                    removeInactiveProcesses();
+                    System.out.println("Coordenador removido!");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                getProcesses().stream().filter(Process::isCoordenator).findFirst().ifPresent(Process::desactivate);
-                removeInactiveProcesses();
-                System.out.println("Coordenador removido!");
             }
         }).start();
     }
@@ -90,18 +101,25 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_PROCESS_TIMER);
+                    getProcesses().stream().findFirst().ifPresent(Process::desactivate);
+                    removeInactiveProcesses();
+                    System.out.println("Processo encerrado");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                getProcesses().stream().findFirst().ifPresent(Process::desactivate);
-                removeInactiveProcesses();
-                System.out.println("Processo encerrado");
             }
         }).start();
     }
 
     private void removeInactiveProcesses() {
         setProcesses(getProcesses().stream().filter(Process::isActive).collect(Collectors.toList()));
+    }
+
+    private void printProcesses() {
+        StringBuilder msg = new StringBuilder();
+        getProcesses().forEach(p -> msg.append(p.toString()));
+        msg.append("\n");
+        System.out.println(msg);
     }
 
     @Override

@@ -34,7 +34,6 @@ public class Process {
     }
 
     public void setCoordenator() {
-        System.out.println(toString());
         setCoordenator(true);
     }
 
@@ -52,6 +51,10 @@ public class Process {
 
     @Override
     public String toString() {
-        return "ID: " + this.getId() + "\n" + "COORDENADOR: " + this.isCoordenator() + "\n" + "Ativo: " + this.isActive() + "\n";
+        return "\n------------------\n" +
+                "ID:" + this.getId() + "\n" +
+                "COORDENADOR: " + this.isCoordenator() + "\n" +
+                "Ativo: " + this.isActive() +
+                "\n------------------\n";
     }
 }
