@@ -1,5 +1,6 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -15,19 +16,7 @@ public class LogicRing extends Thread {
     private List<Process> processes;
 
     public LogicRing() {
-        processes = new LinkedList<>();
-    }
-
-    public List<Process> getProcesses() {
-        return processes;
-    }
-
-    public void setProcesses(List<Process> processes) {
-        this.processes = processes;
-    }
-
-    public void addProcess(Process process) {
-        this.processes.add(process);
+        processes = new ArrayList<>();
     }
 
     private void createProcess() {
@@ -43,19 +32,6 @@ public class LogicRing extends Thread {
         }).start();
     }
 
-    private int createProcessId() {
-        Random generator = new Random();
-        int newID;
-        do {
-            newID = generator.nextInt(1000);
-        } while (isInvalidId(newID));
-        return newID;
-    }
-
-    private boolean isInvalidId(int id) {
-        return id == 0 || getProcesses().stream().anyMatch(p -> p.getId() == id);
-    }
-
     private void sendRequisition() {
         new Thread(() -> {
             while (true) {
@@ -64,9 +40,9 @@ public class LogicRing extends Thread {
                     if (!hasProcesses() || getProcesses().stream().anyMatch(Process::isCoordenator)) {
                         System.out.println("Requisicao Cancelada! Coordenador ainda operante ou sem processos!");
                     } else {
-                        Requisition requisition = getProcesses().stream().findFirst().orElse(new Process(0)).createRequisition();
+                        Requisition requisition = getRandomProcess().orElse(new Process(0)).createRequisition();
                         getProcesses().forEach(p -> p.receiveRequisition(requisition));
-                        getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findFirst().ifPresent(Process::setCoordenator);
+                        getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findAny().ifPresent(Process::setCoordenator);
                         System.out.println("Requisicao enviada!");
                     }
                     printProcesses();
@@ -77,16 +53,12 @@ public class LogicRing extends Thread {
         }).start();
     }
 
-    private boolean hasProcesses() {
-        return nonNull(getProcesses()) && !getProcesses().isEmpty();
-    }
-
     private void inativateCoordenator() {
         new Thread(() -> {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_COORDENATOR_TIMER);
-                    getProcesses().stream().filter(Process::isCoordenator).findFirst().ifPresent(Process::desactivate);
+                    getProcesses().stream().filter(Process::isCoordenator).findAny().ifPresent(Process::desactivate);
                     removeInactiveProcesses();
                     System.out.println("Coordenador removido!");
                 } catch (InterruptedException e) {
@@ -101,7 +73,8 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_PROCESS_TIMER);
-                    getProcesses().stream().findFirst().ifPresent(Process::desactivate);
+                    // getProcesses().remove((int) (getProcesses().size() * Math.random()));
+                    getRandomProcess().ifPresent(Process::desactivate);
                     removeInactiveProcesses();
                     System.out.println("Processo encerrado");
                 } catch (InterruptedException e) {
@@ -109,6 +82,39 @@ public class LogicRing extends Thread {
                 }
             }
         }).start();
+    }
+
+    public List<Process> getProcesses() {
+        return processes;
+    }
+
+    public void setProcesses(List<Process> processes) {
+        this.processes = processes;
+    }
+
+    public void addProcess(Process process) {
+        this.processes.add(process);
+    }
+
+    private int createProcessId() {
+        Random generator = new Random();
+        int newID;
+        do {
+            newID = generator.nextInt(1000);
+        } while (isInvalidId(newID));
+        return newID;
+    }
+
+    private boolean isInvalidId(int id) {
+        return id == 0 || getProcesses().stream().anyMatch(p -> p.getId() == id);
+    }
+
+    private boolean hasProcesses() {
+        return nonNull(getProcesses()) && !getProcesses().isEmpty();
+    }
+
+    private Optional<Process> getRandomProcess() {
+        return getProcesses().stream().skip((int) (Math.random() * getProcesses().size())).findAny();
     }
 
     private void removeInactiveProcesses() {
