@@ -8,10 +8,12 @@ import static java.util.Objects.nonNull;
 
 public class LogicRing extends Thread {
 
+    // TODO: VERIFICAR SE AS MENSAGENS NO CONSOLE ESTAO COERENTES PARA APRESENTACAO
+    // TODO: VERIFICAR SE OS TEMPOS ESTAO CORRETOS
     private final int CREATE_PROCESS_TIMER = 30000;
     private final int CREATE_REQUISITION_TIMER = 25000;
-    private final int INATIVATE_PROCESS_TIMER = 100000;
-    private final int INATIVATE_COORDENATOR_TIMER = 80000;
+    private final int INATIVATE_PROCESS_TIMER = 80000;
+    private final int INATIVATE_COORDENATOR_TIMER = 100000;
 
     private List<Process> processes;
 
@@ -25,6 +27,7 @@ public class LogicRing extends Thread {
                 try {
                     Thread.sleep(CREATE_PROCESS_TIMER);
                     addProcess(new Process(createProcessId()));
+                    System.out.println("Processo adicionado!");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -58,8 +61,7 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_COORDENATOR_TIMER);
-                    getProcesses().stream().filter(Process::isCoordenator).findAny().ifPresent(Process::desactivate);
-                    removeInactiveProcesses();
+                    setProcesses(getProcesses().stream().filter(Process::isNotCoordenator).collect(Collectors.toList()));
                     System.out.println("Coordenador removido!");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -73,9 +75,7 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_PROCESS_TIMER);
-                    // getProcesses().remove((int) (getProcesses().size() * Math.random()));
-                    getRandomProcess().ifPresent(Process::desactivate);
-                    removeInactiveProcesses();
+                    getProcesses().remove((int) (getProcesses().size() * Math.random()));
                     System.out.println("Processo encerrado");
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -115,10 +115,6 @@ public class LogicRing extends Thread {
 
     private Optional<Process> getRandomProcess() {
         return getProcesses().stream().skip((int) (Math.random() * getProcesses().size())).findAny();
-    }
-
-    private void removeInactiveProcesses() {
-        setProcesses(getProcesses().stream().filter(Process::isActive).collect(Collectors.toList()));
     }
 
     private void printProcesses() {
