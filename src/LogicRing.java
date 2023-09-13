@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -43,7 +42,7 @@ public class LogicRing extends Thread {
                     if (!hasProcesses() || getProcesses().stream().anyMatch(Process::isCoordenator)) {
                         System.out.println("Requisicao Cancelada! Coordenador ainda operante ou sem processos!");
                     } else {
-                        Requisition requisition = getRandomProcess().orElse(new Process(0)).createRequisition();
+                        Requisition requisition = getProcesses().get((int) (Math.random() * getProcesses().size())).createRequisition();
                         getProcesses().forEach(p -> p.receiveRequisition(requisition));
                         getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findAny().ifPresent(Process::setCoordenator);
                         System.out.println("Requisicao enviada!");
@@ -111,10 +110,6 @@ public class LogicRing extends Thread {
 
     private boolean hasProcesses() {
         return nonNull(getProcesses()) && !getProcesses().isEmpty();
-    }
-
-    private Optional<Process> getRandomProcess() {
-        return getProcesses().stream().skip((int) (Math.random() * getProcesses().size())).findAny();
     }
 
     private void printProcesses() {
