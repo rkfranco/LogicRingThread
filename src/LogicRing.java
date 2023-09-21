@@ -7,8 +7,6 @@ import static java.util.Objects.nonNull;
 
 public class LogicRing extends Thread {
 
-    // TODO: VERIFICAR SE AS MENSAGENS NO CONSOLE ESTAO COERENTES PARA APRESENTACAO
-    // TODO: VERIFICAR SE OS TEMPOS ESTAO CORRETOS
     private final int CREATE_PROCESS_TIMER = 30000;
     private final int CREATE_REQUISITION_TIMER = 25000;
     private final int INATIVATE_PROCESS_TIMER = 80000;
