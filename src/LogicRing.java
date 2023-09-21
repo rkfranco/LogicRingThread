@@ -26,7 +26,8 @@ public class LogicRing extends Thread {
                 try {
                     Thread.sleep(CREATE_PROCESS_TIMER);
                     addProcess(new Process(createProcessId()));
-                    System.out.println("Processo adicionado!");
+                    System.out.println("\n---> Criação de um novo processo");
+                    printProcesses();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -39,14 +40,22 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(CREATE_REQUISITION_TIMER);
-                    if (!hasProcesses() || getProcesses().stream().anyMatch(Process::isCoordenator)) {
-                        System.out.println("Requisicao Cancelada! Coordenador ainda operante ou sem processos!");
-                    } else {
-                        Requisition requisition = getProcesses().get((int) (Math.random() * getProcesses().size())).createRequisition();
-                        getProcesses().forEach(p -> p.receiveRequisition(requisition));
-                        getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findAny().ifPresent(Process::setCoordenator);
-                        System.out.println("Requisicao enviada!");
+                    System.out.println("\n---> Requisição para o coordenador");
+
+                    if (!hasProcesses()) {
+                        System.out.println("Requisição cancelada! Não há processos");
+                        continue;
                     }
+                    if (getProcesses().stream().anyMatch(Process::isCoordenator)) {
+                        System.out.println("Requisição cancelada! Coordenador ainda operante");
+                        continue;
+                    }
+
+                    Requisition requisition = getProcesses().get((int) (Math.random() * getProcesses().size())).createRequisition();
+                    getProcesses().forEach(p -> p.receiveRequisition(requisition));
+                    getProcesses().stream().filter(p -> p.getId() == requisition.getId()).findAny().ifPresent(Process::setCoordenator);
+
+                    System.out.println("Requisição enviada! Novo coordenador operante");
                     printProcesses();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -60,8 +69,10 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_COORDENATOR_TIMER);
+                    System.out.println("\n---> Inativação do coordenador");
                     setProcesses(getProcesses().stream().filter(Process::isNotCoordenator).collect(Collectors.toList()));
-                    System.out.println("Coordenador removido!");
+                    System.out.println("Coordenador inativado");
+                    printProcesses();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -74,8 +85,10 @@ public class LogicRing extends Thread {
             while (true) {
                 try {
                     Thread.sleep(INATIVATE_PROCESS_TIMER);
-                    getProcesses().remove((int) (getProcesses().size() * Math.random()));
-                    System.out.println("Processo encerrado");
+                    System.out.println("\n---> Inativação de um processo");
+                    Process p = getProcesses().remove((int) (getProcesses().size() * Math.random()));
+                    System.out.println(String.format("Processo %s inativado", p.getId()));
+                    printProcesses();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -113,14 +126,13 @@ public class LogicRing extends Thread {
     }
 
     private void printProcesses() {
-        StringBuilder msg = new StringBuilder();
-        getProcesses().forEach(p -> msg.append(p.toString()));
-        msg.append("\n");
-        System.out.println(msg);
+        String msg = getProcesses().stream().map(Process::toString).collect(Collectors.joining(", "));
+        System.out.println("Processos: [" + msg + "]");
     }
 
     @Override
     public void run() {
+        System.out.println("Algoritmo de eleição - Anel Lógico");
         this.createProcess();
         this.sendRequisition();
         this.inativateCoordenator();

@@ -41,9 +41,6 @@ public class Process {
 
     @Override
     public String toString() {
-        return "\n------------------\n" +
-                "ID:" + this.getId() + "\n" +
-                "COORDENADOR: " + this.isCoordenator() +
-                "\n------------------\n";
+        return String.valueOf(this.getId());
     }
 }
